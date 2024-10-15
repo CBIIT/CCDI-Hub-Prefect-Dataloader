@@ -1,0 +1,3 @@
+[submodule "icdc-dataloader"]
+	path = icdc-dataloader
+	url = https://github.com/CBIIT/icdc-dataloader.git
