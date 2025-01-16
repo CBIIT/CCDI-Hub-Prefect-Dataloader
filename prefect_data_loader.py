@@ -15,7 +15,7 @@ SUBMISSION_BUCKET = "submission_bucket"
 DropDownChoices = Literal[True, False]
 ModeDropDownChoices = Literal["upsert", "new", "delete"]
 
-@flow(name="Data Loader", log_prints=True)
+#@flow(name="Data Loader", log_prints=True)
 def load_data(
         s3_bucket,
         s3_folder,
