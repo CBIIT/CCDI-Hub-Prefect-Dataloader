@@ -133,7 +133,7 @@ def ccdi_hub_data_loader(
         mode: ModeDropDownChoices,
         split_transaction: DropDownChoices,
         plugins=[],
-        no_backup: bool = True,
+        no_backup: bool = False,
         yes: bool = True,
         max_violation: int = 1000000,
     ):
