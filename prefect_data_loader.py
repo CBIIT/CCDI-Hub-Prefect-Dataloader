@@ -1,7 +1,9 @@
 from prefect import flow, task
-import importlib
 import os
 import sys
+import importlib
+
+sys.path.insert(0, os.path.abspath("./icdc-dataloader"))
 icdc_dataloader = importlib.import_module("icdc-dataloader")
 
 from icdc_dataloader.loader import main
