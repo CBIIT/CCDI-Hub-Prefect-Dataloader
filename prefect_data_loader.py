@@ -3,11 +3,14 @@ from prefect import flow, task
 from icdc-dataloader.loader import main
 from config import PluginConfig
 from icdc-dataloader.bento.common.secret_manager import get_secret
+from typing import Literal
 
 NEO4J_URI = "neo4j_uri"
 NEO4J_PASSWORD = "neo4j_password"
 SUBMISSION_BUCKET = "submission_bucket"
 
+DropDownChoices = Literal[True, False]
+ModeDropDownChoices = Literal["upsert", "new", "delete"]
 
 @flow(name="Data Loader", log_prints=True)
 def load_data(
@@ -117,20 +120,37 @@ class Config:
 
 @flow(name="CCDI Hub Data Loader", log_prints=True)
 def ccdi_hub_data_loader(
-        secret_name,
-        metadata_folder="metadata",
-        schemas,
-        prop_file,
-        cheat_mode,
-        dry_run,
-        wipe_db,
-        no_backup,
-        yes,
-        max_violation,
-        mode,
-        split_transaction,
-        plugins=[]
+        secret_name: str,
+        metadata_folder: str,
+        schemas: list[str],
+        prop_file: str,
+        cheat_mode: DropDownChoices,
+        dry_run: DropDownChoices,
+        wipe_db: DropDownChoices,
+        mode: ModeDropDownChoices,
+        split_transaction: DropDownChoices,
+        plugins=[],
+        no_backup: bool = True,
+        yes: bool = True,
+        max_violation: int = 1000000,
     ):
+    """Entrypoint of prefect data loader for CCDI sandbox DB
+
+    Args:
+        secret_name (str): secret name stored in AWS secrets manager.
+        metadata_folder (str): folder path of metadata under hard coded s3 bucket.
+        schemas (list[str]): List of ccdi data model files.
+        prop_file (str): path of props-ccdi-model.yml.
+        cheat_mode (DropDownChoices): If turn on cheat mode.
+        dry_run (DropDownChoices): if dry run.
+        wipe_db (DropDownChoices): if wipe the entire database.
+        mode (ModeDropDownChoices): data loading mode.
+        split_transaction (DropDownChoices): if split transaction.
+        plugins (list, optional): Defaults to [].
+        no_backup (bool, optional): Defaults to True.
+        yes (bool, optional): Defaults to True.
+        max_violation (int, optional): Defaults to 1000000.
+    """    
 
     secret = get_secret(secret_name)
     uri = secret[NEO4J_URI]
@@ -153,7 +173,7 @@ def ccdi_hub_data_loader(
         wipe_db = wipe_db,
         no_backup = no_backup,
         yes = yes,
-        max_violation = 1000000,
+        max_violation = max_violation,
         mode = mode,
         split_transaction = split_transaction,
         plugins = plugins
