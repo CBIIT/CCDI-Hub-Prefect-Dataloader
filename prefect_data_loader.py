@@ -150,7 +150,7 @@ def ccdi_hub_data_loader(
         mode (ModeDropDownChoices): data loading mode.
         split_transaction (DropDownChoices): if split transaction.
         plugins (list, optional): Defaults to [].
-        no_backup (bool, optional): Defaults to True.
+        no_backup (bool, optional): Defaults to False. Backup is needed if split_transaction is True.
         yes (bool, optional): Defaults to True.
         max_violation (int, optional): Defaults to 1000000.
     """    
