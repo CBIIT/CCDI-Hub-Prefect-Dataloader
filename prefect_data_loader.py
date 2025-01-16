@@ -1,14 +1,11 @@
 from prefect import flow, task
 import os
 import sys
-import importlib
 
 sys.path.insert(0, os.path.abspath("./icdc-dataloader"))
-icdc_dataloader = importlib.import_module("icdc-dataloader")
-
-from icdc_dataloader.loader import main
+from loader import main
 from config import PluginConfig
-from icdc_dataloader.bento.common.secret_manager import get_secret
+from bento.common.secret_manager import get_secret
 from typing import Literal
 
 NEO4J_URI = "neo4j_uri"
