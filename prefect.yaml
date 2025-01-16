@@ -16,11 +16,11 @@ push: null
 pull:
   - prefect.deployments.steps.git_clone:
       repository: https://github.com/CBIIT/ccdi-model.git
-      branch: main
+      branch: 2.0.0
   - prefect.deployments.steps.git_clone:
       id: clone-step
       repository: https://github.com/CBIIT/CCDI-Portal-Prefect-Dataloader.git
-      branch: main
+      branch: PORTAL-1870_testing
       include_submodules: True
   - prefect.projects.steps.pip_install_requirements:
       requirements_file: requirements.txt
@@ -29,15 +29,15 @@ pull:
 
 # the deployments section allows you to provide configuration for deploying flows
 deployments:
-  - name: ccdi-hub-neo4j-data-loading-sandbox
+  - name: TEST-ccdi-hub-data-loading-sandbox
     version: null
-    tags: []
+    tags: ["TEST"]
     description: null
     schedule: {}
     flow_name: null
     entrypoint: prefect_data_loader.py:ccdi_hub_data_loader
     parameters:
-      secret_name: "{{ prefect.variables.secret_name_dev }}"
+      secret_name: "{{ prefect.variables.aws_dataloader_secret_name }}"
       metadata_folder: ""
       schemas:
         - ../ccdi-model/model-desc/ccdi-model.yml
@@ -49,7 +49,7 @@ deployments:
       mode: "upsert"
       split_transaction: True
     work_pool:
-      name: ccdi-curation-16gb
+      name: ccdi-hub-sandbox-prefect-8gb
       work_queue_name: default
       job_variables:
         env:
