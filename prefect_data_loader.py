@@ -161,6 +161,8 @@ def ccdi_hub_data_loader(
     s3_bucket = secret[SUBMISSION_BUCKET]
     s3_folder = f'/{metadata_folder}'
 
+    print(os.listdir("../ccdi-model/model-desc"))
+
     load_data(
         s3_bucket = s3_bucket,
         s3_folder = s3_folder,
