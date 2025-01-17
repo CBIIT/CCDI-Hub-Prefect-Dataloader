@@ -159,7 +159,7 @@ def ccdi_hub_data_loader(
     uri = secret[NEO4J_URI]
     password = secret[NEO4J_PASSWORD]
     s3_bucket = secret[SUBMISSION_BUCKET]
-    s3_folder = f'/{metadata_folder}'
+    s3_folder = f'{metadata_folder}'
 
     schemas = [
         f"../ccdi-model-{model_tag}/model-desc/ccdi-model.yml",
