@@ -27,7 +27,7 @@ def load_data(
         password = "123456",
         schemas = ["../ccdi-model/model-desc/icdc-model.yml", "../ccdi-model/model-desc/icdc-model-props.yml"],
         prop_file = "./icdc-dataloader/config/props-ccdi-model.yml",
-        backup_folder = None,
+        backup_folder = "tmp/data-loader-backups",
         cheat_mode = False,
         dry_run = False,
         wipe_db = False,
