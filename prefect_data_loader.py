@@ -15,7 +15,7 @@ SUBMISSION_BUCKET = "submission_bucket"
 DropDownChoices = Literal[True, False]
 ModeDropDownChoices = Literal["upsert", "new", "delete"]
 
-#@flow(name="Data Loader", log_prints=True)
+# @flow(name="Data Loader", log_prints=True)
 def load_data(
         s3_bucket,
         s3_folder,
@@ -125,7 +125,7 @@ class Config:
 def ccdi_hub_data_loader(
         secret_name: str,
         metadata_folder: str,
-        schemas: list[str],
+        model_tag: str,
         prop_file: str,
         cheat_mode: DropDownChoices,
         dry_run: DropDownChoices,
@@ -136,13 +136,13 @@ def ccdi_hub_data_loader(
         no_backup: bool = False,
         yes: bool = True,
         max_violation: int = 1000000,
-    ):
+    ): 
     """Entrypoint of prefect data loader for CCDI sandbox DB
 
     Args:
         secret_name (str): secret name stored in AWS secrets manager.
         metadata_folder (str): folder path of metadata under hard coded s3 bucket.
-        schemas (list[str]): List of ccdi data model files.
+        model_tag (str): tag of the model to use.
         prop_file (str): path of props-ccdi-model.yml.
         cheat_mode (DropDownChoices): If turn on cheat mode.
         dry_run (DropDownChoices): if dry run.
@@ -153,7 +153,7 @@ def ccdi_hub_data_loader(
         no_backup (bool, optional): Defaults to False. Backup is needed if split_transaction is True.
         yes (bool, optional): Defaults to True.
         max_violation (int, optional): Defaults to 1000000.
-    """    
+    """
 
     secret = get_secret(secret_name)
     uri = secret[NEO4J_URI]
@@ -161,7 +161,10 @@ def ccdi_hub_data_loader(
     s3_bucket = secret[SUBMISSION_BUCKET]
     s3_folder = f'/{metadata_folder}'
 
-    print(os.listdir("../"))
+    schemas = [
+        f"../ccdi-model-{model_tag}/model-desc/ccdi-model.yml",
+        f"../ccdi-model-{model_tag}/model-desc/ccdi-model-props.yml",
+    ]
 
     load_data(
         s3_bucket = s3_bucket,
