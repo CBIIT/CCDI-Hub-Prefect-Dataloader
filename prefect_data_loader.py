@@ -25,8 +25,7 @@ def get_time() -> str:
     dt_string = now.strftime("%Y%m%d_T%H%M%S")
     return dt_string
 
-
-@flow(name="Data Loader", log_prints=True)
+@task
 def load_data(
         s3_bucket,
         s3_folder,
