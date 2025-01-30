@@ -26,7 +26,7 @@ def get_time() -> str:
     return dt_string
 
 
-# @flow(name="Data Loader", log_prints=True)
+@flow(name="Data Loader", log_prints=True)
 def load_data(
         s3_bucket,
         s3_folder,
@@ -50,7 +50,7 @@ def load_data(
         mode = "upsert",
         split_transaction = False,
         plugins = []
-    ):
+    ) -> None:
 
     params = Config(
         dataset,
@@ -77,6 +77,7 @@ def load_data(
         temp_folder
     )
     main(params)
+    return None
 
 class Config:
     def __init__(
@@ -148,7 +149,7 @@ def ccdi_hub_data_loader(
         no_backup: bool = True,
         yes: bool = True,
         max_violation: int = 1000000,
-    ): 
+    ) -> None: 
     """Entrypoint of prefect data loader for CCDI sandbox DB
 
     Args:
@@ -212,6 +213,7 @@ def ccdi_hub_data_loader(
         plugins = plugins
     )
     print(f"log file can be found in the s3 location {upload_log_dir}")
+    return None
 
 if __name__ == "__main__":
     # create your first deployment
