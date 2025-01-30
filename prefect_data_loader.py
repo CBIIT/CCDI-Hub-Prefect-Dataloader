@@ -9,6 +9,7 @@ from bento.common.secret_manager import get_secret
 from typing import Literal
 from datetime import datetime
 from pytz import timezone
+import pkg_resources
 
 NEO4J_URI = "neo4j_uri"
 NEO4J_PASSWORD = "neo4j_password"
@@ -167,6 +168,11 @@ def ccdi_hub_data_loader(
         yes (bool, optional): Defaults to True.
         max_violation (int, optional): Defaults to 1000000.
     """
+    print(sys.version)
+    installed_packages = pkg_resources.working_set
+    installed_packages_list = sorted(["%s==%s" % (i.key, i.version) for i in installed_packages]):
+    print(installed_packages_list)
+
     print("Getting secrets from AWS Secrets Manager")
     secret = get_secret(secret_name)
     uri = secret[NEO4J_URI]
