@@ -7,6 +7,8 @@ from loader import main
 from config import PluginConfig
 from bento.common.secret_manager import get_secret
 from typing import Literal
+from datetime import datetime
+from pytz import timezone
 
 NEO4J_URI = "neo4j_uri"
 NEO4J_PASSWORD = "neo4j_password"
@@ -14,6 +16,15 @@ SUBMISSION_BUCKET = "submission_bucket"
 
 DropDownChoices = Literal[True, False]
 ModeDropDownChoices = Literal["upsert", "new", "delete"]
+
+
+def get_time() -> str:
+    """Returns the current time"""
+    tz = timezone("EST")
+    now = datetime.now(tz)
+    dt_string = now.strftime("%Y%m%d_T%H%M%S")
+    return dt_string
+
 
 # @flow(name="Data Loader", log_prints=True)
 def load_data(
@@ -125,6 +136,7 @@ class Config:
 def ccdi_hub_data_loader(
         secret_name: str,
         metadata_folder: str,
+        runner: str,
         model_tag: str,
         prop_file: str,
         cheat_mode: DropDownChoices,
@@ -142,6 +154,7 @@ def ccdi_hub_data_loader(
     Args:
         secret_name (str): secret name stored in AWS secrets manager.
         metadata_folder (str): folder path of metadata under hard coded s3 bucket.
+        runner (str): unique runner name that will be used for log folder
         model_tag (str): tag of the model to use.
         prop_file (str): path of props-ccdi-model.yml.
         cheat_mode (DropDownChoices): If turn on cheat mode.
@@ -154,22 +167,34 @@ def ccdi_hub_data_loader(
         yes (bool, optional): Defaults to True.
         max_violation (int, optional): Defaults to 1000000.
     """
-
+    print("Getting secrets from AWS Secrets Manager")
     secret = get_secret(secret_name)
     uri = secret[NEO4J_URI]
     password = secret[NEO4J_PASSWORD]
     s3_bucket = secret[SUBMISSION_BUCKET]
+    if not metadata_folder.endswith("/"):
+        metadata_folder= metadata_folder + "/"
+    else:
+        pass
     s3_folder = f'{metadata_folder}'
 
+    log_folder = f"prefect_ccdi_dataloader_{get_time()}"
+    if runner.endswith("/"):
+        runner= runner[:-1]
+    else:
+        pass
+    upload_log_dir = f's3://{s3_bucket}/{runner}/{log_folder}/logs'
+    
     schemas = [
         f"../ccdi-model-{model_tag}/model-desc/ccdi-model.yml",
         f"../ccdi-model-{model_tag}/model-desc/ccdi-model-props.yml",
     ]
 
+    print("start loading data")
     load_data(
         s3_bucket = s3_bucket,
         s3_folder = s3_folder,
-        upload_log_dir = f's3://{s3_bucket}/{s3_folder}/logs',
+        upload_log_dir = upload_log_dir,
         dataset = "data",
         temp_folder = "tmp",
         uri = uri,
@@ -186,6 +211,7 @@ def ccdi_hub_data_loader(
         split_transaction = split_transaction,
         plugins = plugins
     )
+    print(f"log file can be found in the s3 location {upload_log_dir}")
 
 if __name__ == "__main__":
     # create your first deployment
