@@ -19,7 +19,7 @@ pull:
       branch: 2.0.0
   - prefect.deployments.steps.git_clone:
       id: clone-step
-      repository: https://github.com/CBIIT/CCDI-Portal-Prefect-Dataloader.git
+      repository: https://github.com/CBIIT/CCDI-Hub-Prefect-Dataloader.git
       branch: PORTAL-1870_testing
       include_submodules: True
   - prefect.projects.steps.pip_install_requirements:
@@ -29,19 +29,18 @@ pull:
 
 # the deployments section allows you to provide configuration for deploying flows
 deployments:
-  - name: TEST-ccdi-hub-data-loading-sandbox
+  - name: ccdi-hub-data-loading-sandbox
     version: null
-    tags: ["TEST"]
+    tags: ["Production"]
     description: null
     schedule: {}
     flow_name: null
     entrypoint: prefect_data_loader.py:ccdi_hub_data_loader
     parameters:
-      secret_name: "{{ prefect.variables.aws_dataloader_secret_name }}"
+      secret_name: "{{ prefect.variables.ccdi_dataloader_sandbox_secret_name }}"
       metadata_folder: ""
-      schemas:
-        - ../ccdi-model/model-desc/ccdi-model.yml
-        - ../ccdi-model/model-desc/ccdi-model-props.yml
+      runner: ""
+      model_tag: "2.0.0"
       prop_file: ./icdc-dataloader/config/props-ccdi-model.yml
       cheat_mode: False
       dry_run: False
