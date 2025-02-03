@@ -145,10 +145,6 @@ def ccdi_hub_data_loader(
         wipe_db: DropDownChoices,
         mode: ModeDropDownChoices,
         split_transaction: DropDownChoices,
-        plugins=[],
-        no_backup: bool = True,
-        yes: bool = True,
-        max_violation: int = 1000000,
     ) -> None: 
     """Entrypoint of prefect data loader for CCDI sandbox DB
 
@@ -163,16 +159,7 @@ def ccdi_hub_data_loader(
         wipe_db (DropDownChoices): if wipe the entire database.
         mode (ModeDropDownChoices): data loading mode.
         split_transaction (DropDownChoices): if split transaction.
-        plugins (list, optional): Defaults to [].
-        no_backup (bool, optional): Defaults to False. Backup is needed if split_transaction is True.
-        yes (bool, optional): Defaults to True.
-        max_violation (int, optional): Defaults to 1000000.
     """
-    print(sys.version)
-    installed_packages = pkg_resources.working_set
-    installed_packages_list = sorted(["%s==%s" % (i.key, i.version) for i in installed_packages])
-    print(installed_packages_list)
-
     print("Getting secrets from AWS Secrets Manager")
     secret = get_secret(secret_name)
     uri = secret[NEO4J_URI]
@@ -190,7 +177,7 @@ def ccdi_hub_data_loader(
     else:
         pass
     upload_log_dir = f's3://{s3_bucket}/{runner}/{log_folder}/logs'
-    
+
     schemas = [
         f"../ccdi-model-{model_tag}/model-desc/ccdi-model.yml",
         f"../ccdi-model-{model_tag}/model-desc/ccdi-model-props.yml",
@@ -198,24 +185,24 @@ def ccdi_hub_data_loader(
 
     print("start loading data")
     load_data(
-        s3_bucket = s3_bucket,
-        s3_folder = s3_folder,
-        upload_log_dir = upload_log_dir,
-        dataset = "data",
-        temp_folder = "tmp",
-        uri = uri,
-        password = password,
-        schemas = schemas,
-        prop_file = prop_file,
-        cheat_mode = cheat_mode,
-        dry_run = dry_run,
-        wipe_db = wipe_db,
-        no_backup = no_backup,
-        yes = yes,
-        max_violation = max_violation,
-        mode = mode,
-        split_transaction = split_transaction,
-        plugins = plugins
+        s3_bucket=s3_bucket,
+        s3_folder=s3_folder,
+        upload_log_dir=upload_log_dir,
+        dataset="data",
+        temp_folder="tmp",
+        uri=uri,
+        password=password,
+        schemas=schemas,
+        prop_file=prop_file,
+        cheat_mode=cheat_mode,
+        dry_run=dry_run,
+        wipe_db=wipe_db,
+        no_backup=True, # turn off backup as default
+        yes=True, # default as True
+        max_violation=1000000, # default max violation to 1,000,000
+        mode=mode,
+        split_transaction=split_transaction,
+        plugins=[], # default as empty list
     )
     print(f"log file can be found in the s3 location {upload_log_dir}")
     return None
