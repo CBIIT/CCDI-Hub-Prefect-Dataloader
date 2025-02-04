@@ -10,6 +10,8 @@ from typing import Literal
 from datetime import datetime
 from pytz import timezone
 import pkg_resources
+import inflect
+import yaml
 
 NEO4J_URI = "neo4j_uri"
 NEO4J_PASSWORD = "neo4j_password"
@@ -25,6 +27,66 @@ def get_time() -> str:
     now = datetime.now(tz)
     dt_string = now.strftime("%Y%m%d_T%H%M%S")
     return dt_string
+
+
+@task
+def create_prop_file(
+    model_yaml: str, delimiter: str, domain_value: str = "Unknown.domain.nci.nih.gov"
+) -> str:
+    """Create a prop file based on the model yaml
+
+    Args:
+        model_yaml (str): Filepath of the model yaml
+        delimiter (str): delimiter for this project
+        domain_value (str): domain value for this project. Defaults to "Unknown.domain.nci.nih.gov".
+
+    Returns:
+        str: Filepath of the prop file  
+    """
+    return_dict = {}
+    return_dict["Properties"] = {}
+    return_dict["Properties"]["domain_value"] = domain_value
+    return_dict["Properties"]["rel_prop_delimiter"] = "$"
+    return_dict["Properties"]["delimiter"] = delimiter
+    with open(model_yaml, "r") as model:
+        model_dict = yaml.safe_load(model)
+    node_list =  list(model_dict["nodes"].keys())
+    plural_dict = {}
+    id_dict = {}
+    plural_engine = inflect.engine()
+    for node in node_list:
+        if "_"in node:
+            last_word = node.split("_")[-1]
+            last_word_plural = plural_engine.plural(last_word)
+            node_name_list =  node.split("_")[:-1] + [last_word_plural]
+            node_plural = "_".join(node_name_list)
+        else:
+            node_plural = plural_engine.plural(node)
+        plural_dict[node] = node_plural
+        id_dict[node] = "id"
+    return_dict["Properties"]["plurals"] = plural_dict
+    return_dict["Properties"]["type_mapping"] = {
+        "string": "String",
+        "number": "Float",
+        "integer": "Int",
+        "boolean": "Boolean",
+        "array": "Array",
+        "object": "Object",
+        "datetime": "DateTime",
+        "date": "Date",
+        "TBD": "String",
+    }
+    return_dict["Properties"]["id_fields"] = id_dict
+    prop_file_name = "props_file.yaml"
+    with open(prop_file_name, "w") as prop_file:
+        yaml.dump(return_dict, prop_file)
+
+    # print yaml file for checking
+    f = open(prop_file_name, "r")
+    file_contents = f.read()
+    print(file_contents)
+    f.close()
+    return prop_file_name
 
 
 def load_data(
@@ -139,7 +201,8 @@ def ccdi_hub_data_loader(
         metadata_folder: str,
         runner: str,
         model_tag: str,
-        prop_file: str,
+        #prop_file: str,
+        metadata_delimiter: str,
         cheat_mode: DropDownChoices,
         dry_run: DropDownChoices,
         wipe_db: DropDownChoices,
@@ -182,7 +245,10 @@ def ccdi_hub_data_loader(
         f"../ccdi-model-{model_tag}/model-desc/ccdi-model.yml",
         f"../ccdi-model-{model_tag}/model-desc/ccdi-model-props.yml",
     ]
-
+    domain_value = "ccdi.cancer.gov"
+    prop_file = create_prop_file(model_yaml=schemas[0], delimiter=metadata_delimiter, domain_value=domain_value)
+    print(prop_file)
+    
     print("start loading data")
     load_data(
         s3_bucket=s3_bucket,
@@ -204,7 +270,7 @@ def ccdi_hub_data_loader(
         split_transaction=split_transaction,
         plugins=[], # default as empty list
     )
-    print(f"log file can be found in the s3 location {upload_log_dir}")
+    print(f"log file can be found in the s3 location {upload_log_dir}")    
     return None
 
 if __name__ == "__main__":
