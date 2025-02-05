@@ -82,6 +82,7 @@ def create_prop_file(
         yaml.dump(return_dict, prop_file, sort_keys=False)
 
     # print yaml file for checking
+    print("Print the content of props_file.yaml")
     f = open(prop_file_name, "r")
     file_contents = f.read()
     print(file_contents)
@@ -246,7 +247,6 @@ def ccdi_hub_data_loader(
     domain_value = "ccdi.cancer.gov"
     metadata_delimiter = ";"
     prop_file = create_prop_file(model_yaml=schemas[0], delimiter=metadata_delimiter, domain_value=domain_value)
-    print(prop_file)
 
     print("start loading data")
     load_data(
