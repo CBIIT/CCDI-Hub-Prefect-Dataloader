@@ -50,7 +50,7 @@ def create_prop_file(
     return_dict["Properties"]["delimiter"] = delimiter
     with open(model_yaml, "r") as model:
         model_dict = yaml.safe_load(model)
-    node_list =  list(model_dict["nodes"].keys())
+    node_list =  list(model_dict["Nodes"].keys())
     plural_dict = {}
     id_dict = {}
     plural_engine = inflect.engine()
