@@ -52,6 +52,19 @@ deployments:
       job_variables:
         env:
           PREFECT_LOGGING_EXTRA_LOGGERS: "Data Loader,Loader,ICDC Schema,S3 Bucket,Bento Config,Copier,ESLoader,FileLoader,File Loader,Model Converter,Props,UUID_util,Bento_adapter,SQS,Visibility Extender,VisitCreator,VisitCreator,Props"
+    pull:
+      - prefect.deployments.steps.git_clone:
+          repository: https://github.com/CBIIT/ccdi-model.git
+          branch: 2.0.0
+      - prefect.deployments.steps.git_clone:
+          id: clone-step
+          repository: https://github.com/CBIIT/CCDI-Hub-Prefect-Dataloader.git
+          branch: main
+          include_submodules: True
+      - prefect.projects.steps.pip_install_requirements:
+          requirements_file: requirements.txt
+          directory: "{{ clone-step.directory }}"
+          stream_output: False
 
   - name: TEST-ccdi-hub-data-loading-sandbox
     version: null
@@ -70,6 +83,19 @@ deployments:
       wipe_db: False
       mode: "upsert"
       split_transaction: True
+    pull:
+      - prefect.deployments.steps.git_clone:
+          repository: https://github.com/CBIIT/ccdi-model.git
+          branch: 2.0.0
+      - prefect.deployments.steps.git_clone:
+          id: clone-step
+          repository: https://github.com/CBIIT/CCDI-Hub-Prefect-Dataloader.git
+          branch: PORTAL-1870_testing
+          include_submodules: True
+      - prefect.projects.steps.pip_install_requirements:
+          requirements_file: requirements.txt
+          directory: "{{ clone-step.directory }}"
+          stream_output: False
     work_pool:
       name: ccdi-hub-sandbox-prefect-8gb
       work_queue_name: default
