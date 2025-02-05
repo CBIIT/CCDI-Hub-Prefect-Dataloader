@@ -201,8 +201,6 @@ def ccdi_hub_data_loader(
         metadata_folder: str,
         runner: str,
         model_tag: str,
-        #prop_file: str,
-        metadata_delimiter: str,
         cheat_mode: DropDownChoices,
         dry_run: DropDownChoices,
         wipe_db: DropDownChoices,
@@ -216,7 +214,6 @@ def ccdi_hub_data_loader(
         metadata_folder (str): folder path of metadata under hard coded s3 bucket.
         runner (str): unique runner name that will be used for log folder
         model_tag (str): tag of the model to use.
-        prop_file (str): path of props-ccdi-model.yml.
         cheat_mode (DropDownChoices): If turn on cheat mode.
         dry_run (DropDownChoices): if dry run.
         wipe_db (DropDownChoices): if wipe the entire database.
@@ -245,10 +242,12 @@ def ccdi_hub_data_loader(
         f"../ccdi-model-{model_tag}/model-desc/ccdi-model.yml",
         f"../ccdi-model-{model_tag}/model-desc/ccdi-model-props.yml",
     ]
+    # hard coded value for CCDI
     domain_value = "ccdi.cancer.gov"
+    metadata_delimiter = ";"
     prop_file = create_prop_file(model_yaml=schemas[0], delimiter=metadata_delimiter, domain_value=domain_value)
     print(prop_file)
-    """
+
     print("start loading data")
     load_data(
         s3_bucket=s3_bucket,
@@ -271,7 +270,6 @@ def ccdi_hub_data_loader(
         plugins=[], # default as empty list
     )
     print(f"log file can be found in the s3 location {upload_log_dir}")     
-    """
    
     return None
 
