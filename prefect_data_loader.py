@@ -46,8 +46,8 @@ def create_prop_file(
     return_dict = {}
     return_dict["Properties"] = {}
     return_dict["Properties"]["domain_value"] = domain_value
-    return_dict["Properties"]["rel_prop_delimiter"] = '"$"'
-    return_dict["Properties"]["delimiter"] = "'" + delimiter + "'"
+    return_dict["Properties"]["rel_prop_delimiter"] = "$"
+    return_dict["Properties"]["delimiter"] = delimiter
     with open(model_yaml, "r") as model:
         model_dict = yaml.safe_load(model)
     node_list =  list(model_dict["Nodes"].keys())
@@ -79,7 +79,7 @@ def create_prop_file(
     return_dict["Properties"]["id_fields"] = id_dict
     prop_file_name = "props_file.yaml"
     with open(prop_file_name, "w") as prop_file:
-        yaml.dump(return_dict, prop_file)
+        yaml.dump(return_dict, prop_file, sort_keys=False)
 
     # print yaml file for checking
     f = open(prop_file_name, "r")
