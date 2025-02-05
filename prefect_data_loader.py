@@ -46,8 +46,8 @@ def create_prop_file(
     return_dict = {}
     return_dict["Properties"] = {}
     return_dict["Properties"]["domain_value"] = domain_value
-    return_dict["Properties"]["rel_prop_delimiter"] = "$"
-    return_dict["Properties"]["delimiter"] = delimiter
+    return_dict["Properties"]["rel_prop_delimiter"] = '"$"'
+    return_dict["Properties"]["delimiter"] = "'" + delimiter + "'"
     with open(model_yaml, "r") as model:
         model_dict = yaml.safe_load(model)
     node_list =  list(model_dict["Nodes"].keys())
@@ -248,7 +248,7 @@ def ccdi_hub_data_loader(
     domain_value = "ccdi.cancer.gov"
     prop_file = create_prop_file(model_yaml=schemas[0], delimiter=metadata_delimiter, domain_value=domain_value)
     print(prop_file)
-    
+    """
     print("start loading data")
     load_data(
         s3_bucket=s3_bucket,
@@ -270,7 +270,9 @@ def ccdi_hub_data_loader(
         split_transaction=split_transaction,
         plugins=[], # default as empty list
     )
-    print(f"log file can be found in the s3 location {upload_log_dir}")    
+    print(f"log file can be found in the s3 location {upload_log_dir}")     
+    """
+   
     return None
 
 if __name__ == "__main__":
