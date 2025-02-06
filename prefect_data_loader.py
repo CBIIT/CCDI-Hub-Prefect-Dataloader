@@ -1,15 +1,95 @@
 from prefect import flow, task
+import os
+import sys
 
-from icdc-dataloader.loader import main
+sys.path.insert(0, os.path.abspath("./icdc-dataloader"))
+from loader import main
 from config import PluginConfig
-from icdc-dataloader.bento.common.secret_manager import get_secret
+from bento.common.secret_manager import get_secret
+from typing import Literal
+from datetime import datetime
+from pytz import timezone
+import pkg_resources
+import inflect
+import yaml
 
 NEO4J_URI = "neo4j_uri"
 NEO4J_PASSWORD = "neo4j_password"
 SUBMISSION_BUCKET = "submission_bucket"
 
+DropDownChoices = Literal[True, False]
+ModeDropDownChoices = Literal["upsert", "new", "delete"]
 
-@flow(name="Data Loader", log_prints=True)
+
+def get_time() -> str:
+    """Returns the current time"""
+    tz = timezone("EST")
+    now = datetime.now(tz)
+    dt_string = now.strftime("%Y%m%d_T%H%M%S")
+    return dt_string
+
+
+@task
+def create_prop_file(
+    model_yaml: str, delimiter: str, domain_value: str = "Unknown.domain.nci.nih.gov"
+) -> str:
+    """Create a prop file based on the model yaml
+
+    Args:
+        model_yaml (str): Filepath of the model yaml
+        delimiter (str): delimiter for this project
+        domain_value (str): domain value for this project. Defaults to "Unknown.domain.nci.nih.gov".
+
+    Returns:
+        str: Filepath of the prop file  
+    """
+    return_dict = {}
+    return_dict["Properties"] = {}
+    return_dict["Properties"]["domain_value"] = domain_value
+    return_dict["Properties"]["rel_prop_delimiter"] = "$"
+    return_dict["Properties"]["delimiter"] = delimiter
+    with open(model_yaml, "r") as model:
+        model_dict = yaml.safe_load(model)
+    node_list =  list(model_dict["Nodes"].keys())
+    plural_dict = {}
+    id_dict = {}
+    plural_engine = inflect.engine()
+    for node in node_list:
+        if "_"in node:
+            last_word = node.split("_")[-1]
+            last_word_plural = plural_engine.plural(last_word)
+            node_name_list =  node.split("_")[:-1] + [last_word_plural]
+            node_plural = "_".join(node_name_list)
+        else:
+            node_plural = plural_engine.plural(node)
+        plural_dict[node] = node_plural
+        id_dict[node] = "id"
+    return_dict["Properties"]["plurals"] = plural_dict
+    return_dict["Properties"]["type_mapping"] = {
+        "string": "String",
+        "number": "Float",
+        "integer": "Int",
+        "boolean": "Boolean",
+        "array": "Array",
+        "object": "Object",
+        "datetime": "DateTime",
+        "date": "Date",
+        "TBD": "String",
+    }
+    return_dict["Properties"]["id_fields"] = id_dict
+    prop_file_name = "props_file.yaml"
+    with open(prop_file_name, "w") as prop_file:
+        yaml.dump(return_dict, prop_file, sort_keys=False)
+
+    # print yaml file for checking
+    print("Print the content of props_file.yaml")
+    f = open(prop_file_name, "r")
+    file_contents = f.read()
+    print(file_contents)
+    f.close()
+    return prop_file_name
+
+
 def load_data(
         s3_bucket,
         s3_folder,
@@ -21,7 +101,7 @@ def load_data(
         password = "123456",
         schemas = ["../ccdi-model/model-desc/icdc-model.yml", "../ccdi-model/model-desc/icdc-model-props.yml"],
         prop_file = "./icdc-dataloader/config/props-ccdi-model.yml",
-        backup_folder = None,
+        backup_folder = "tmp/data-loader-backups",
         cheat_mode = False,
         dry_run = False,
         wipe_db = False,
@@ -33,7 +113,7 @@ def load_data(
         mode = "upsert",
         split_transaction = False,
         plugins = []
-    ):
+    ) -> None:
 
     params = Config(
         dataset,
@@ -60,6 +140,7 @@ def load_data(
         temp_folder
     )
     main(params)
+    return None
 
 class Config:
     def __init__(
@@ -117,47 +198,80 @@ class Config:
 
 @flow(name="CCDI Hub Data Loader", log_prints=True)
 def ccdi_hub_data_loader(
-        secret_name,
-        metadata_folder="metadata",
-        schemas,
-        prop_file,
-        cheat_mode,
-        dry_run,
-        wipe_db,
-        no_backup,
-        yes,
-        max_violation,
-        mode,
-        split_transaction,
-        plugins=[]
-    ):
+        secret_name: str,
+        metadata_folder: str,
+        runner: str,
+        model_tag: str,
+        cheat_mode: DropDownChoices,
+        dry_run: DropDownChoices,
+        wipe_db: DropDownChoices,
+        mode: ModeDropDownChoices,
+        split_transaction: DropDownChoices,
+    ) -> None: 
+    """Entrypoint of prefect data loader for CCDI sandbox DB
 
+    Args:
+        secret_name (str): secret name stored in AWS secrets manager.
+        metadata_folder (str): folder path of metadata under hard coded s3 bucket.
+        runner (str): unique runner name that will be used for log folder
+        model_tag (str): tag of the model to use.
+        cheat_mode (DropDownChoices): If turn on cheat mode.
+        dry_run (DropDownChoices): if dry run.
+        wipe_db (DropDownChoices): if wipe the entire database.
+        mode (ModeDropDownChoices): data loading mode.
+        split_transaction (DropDownChoices): if split transaction.
+    """
+    print("Getting secrets from AWS Secrets Manager")
     secret = get_secret(secret_name)
     uri = secret[NEO4J_URI]
     password = secret[NEO4J_PASSWORD]
     s3_bucket = secret[SUBMISSION_BUCKET]
-    s3_folder = f'/{metadata_folder}'
+    if not metadata_folder.endswith("/"):
+        metadata_folder= metadata_folder + "/"
+    else:
+        pass
+    s3_folder = f'{metadata_folder}'
 
+    log_folder = f"prefect_ccdi_dataloader_{get_time()}"
+    if runner.endswith("/"):
+        runner= runner[:-1]
+    else:
+        pass
+    upload_log_dir = f's3://{s3_bucket}/{runner}/{log_folder}/logs'
+
+    schemas = [
+        f"../ccdi-model-{model_tag}/model-desc/ccdi-model.yml",
+        f"../ccdi-model-{model_tag}/model-desc/ccdi-model-props.yml",
+    ]
+    # hard coded value for CCDI
+    domain_value = "ccdi.cancer.gov"
+    metadata_delimiter = ";"
+    prop_file = create_prop_file(model_yaml=schemas[0], delimiter=metadata_delimiter, domain_value=domain_value)
+
+    print("start loading data")
     load_data(
-        s3_bucket = s3_bucket,
-        s3_folder = s3_folder,
-        upload_log_dir = f's3://{s3_bucket}/{s3_folder}/logs',
-        dataset = "data",
-        temp_folder = "tmp",
-        uri = uri,
-        password = password,
-        schemas = schemas,
-        prop_file = prop_file,
-        cheat_mode = cheat_mode,
-        dry_run = dry_run,
-        wipe_db = wipe_db,
-        no_backup = no_backup,
-        yes = yes,
-        max_violation = 1000000,
-        mode = mode,
-        split_transaction = split_transaction,
-        plugins = plugins
+        s3_bucket=s3_bucket,
+        s3_folder=s3_folder,
+        upload_log_dir=upload_log_dir,
+        dataset="data",
+        temp_folder="tmp",
+        uri=uri,
+        password=password,
+        schemas=schemas,
+        prop_file=prop_file,
+        cheat_mode=cheat_mode,
+        dry_run=dry_run,
+        wipe_db=wipe_db,
+        no_backup=True, # turn off backup as default
+        yes=True, # default as True
+        max_violation=1000000, # default max violation to 1,000,000
+        mode=mode,
+        split_transaction=split_transaction,
+        plugins=[], # default as empty list
     )
+    print(f"log file can be found in the s3 location {upload_log_dir}")     
+   
+    return None
 
 if __name__ == "__main__":
     # create your first deployment
