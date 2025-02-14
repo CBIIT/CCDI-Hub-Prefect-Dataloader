@@ -212,7 +212,7 @@ def ccdi_hub_data_loader(
 
     Args:
         secret_name (str): secret name stored in AWS secrets manager.
-        metadata_folder (str): folder path of metadata under hard coded s3 bucket.
+        metadata_folder (str): folder name under bucket s3://ccdi-nonprod-inventory-etl-staging-update.
         runner (str): unique runner name that will be used for log folder
         model_tag (str): tag of the model to use.
         cheat_mode (DropDownChoices): If turn on cheat mode.
@@ -270,7 +270,7 @@ def ccdi_hub_data_loader(
         plugins=[], # default as empty list
     )
     print(f"log file can be found in the s3 location {upload_log_dir}")     
-   
+
     return None
 
 if __name__ == "__main__":
