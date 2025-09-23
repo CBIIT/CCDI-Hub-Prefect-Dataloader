@@ -245,9 +245,9 @@ def ccdi_hub_data_loader(
     s3_bucket = secret[SUBMISSION_BUCKET]
 
     # print the branch name of data model just to make sure the input model_tag and model branch pulled are the same
-    pulled_model_branch = get_git_tag(repo_path=f"../c3dc-model-{model_tag}/")
+    pulled_model_branch = get_git_tag(repo_path=f"../ccdi-model-{model_tag}/")
     print(f"Provided model tag: {model_tag}")
-    print(f"Pulled c3dc-model tag: {pulled_model_branch}")
+    print(f"Pulled ccdi-model tag: {pulled_model_branch}")
     if model_tag == pulled_model_branch:
         print("The model branch pulled is the same as the input model tag")
     else:
