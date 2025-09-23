@@ -9,7 +9,6 @@ from bento.common.secret_manager import get_secret
 from typing import Literal
 from datetime import datetime
 from pytz import timezone
-import pkg_resources
 import inflect
 import yaml
 
@@ -28,6 +27,23 @@ def get_time() -> str:
     dt_string = now.strftime("%Y%m%d_T%H%M%S")
     return dt_string
 
+def get_git_tag(repo_path=".") -> str:
+    """get the tag number of a repo
+
+    Args:
+        repo_path (str, optional): repo path. Defaults to ".".
+
+    Returns:
+        str: tag name
+    """    
+    try:
+        tag = subprocess.check_output(
+            ["git", "describe", "--tags", "--exact-match"], cwd=repo_path, text=True
+        ).strip()
+        return tag
+    except subprocess.CalledProcessError:
+        print("No tag found for the current commit.")
+        return None
 
 @task
 def create_prop_file(
@@ -226,6 +242,18 @@ def ccdi_hub_data_loader(
     uri = secret[NEO4J_URI]
     password = secret[NEO4J_PASSWORD]
     s3_bucket = secret[SUBMISSION_BUCKET]
+
+    # print the branch name of data model just to make sure the input model_tag and model branch pulled are the same
+    pulled_model_branch = get_git_tag(repo_path=f"../c3dc-model-{model_tag}/")
+    print(f"Provided model tag: {model_tag}")
+    print(f"Pulled c3dc-model tag: {pulled_model_branch}")
+    if model_tag == pulled_model_branch:
+        print("The model branch pulled is the same as the input model tag")
+    else:
+        print("The model branch pulled is not the same as the input model tag")
+        print(f"The model branch pulled is {pulled_model_branch} and the input model tag is {model_tag}. Redeployment using the desired model tag is required.")
+        raise ValueError("The model branch pulled is not the same as the input model tag")
+        
     if not metadata_folder.endswith("/"):
         metadata_folder= metadata_folder + "/"
     else:
